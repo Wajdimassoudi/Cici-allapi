@@ -1,0 +1,16 @@
+
+{
+  "name": "CICI - APIs مجانية",
+  "short_name": "CICI APIs",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#667eea",
+  "background_color": "#667eea",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1011/1011322.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

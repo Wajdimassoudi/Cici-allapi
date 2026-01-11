@@ -1,315 +1,139 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { GoogleGenAI } from "@google/genai";
 import { API, Category } from './types';
 import { 
-  CATEGORIES, INITIAL_APIS, APP_STATS, SHRINKME_BASE,
-  BANNERS_728, BANNERS_468, BANNERS_300, BANNERS_120, BANNERS_160, ADDITIONAL_LINKS, SPLASH_LINKS
+  CATEGORIES, INITIAL_APIS, APP_STATS, 
+  BANNERS_300, BANNERS_160, ADDITIONAL_LINKS, SPLASH_LINKS 
 } from './constants';
 
 const DIRECT_AD_LINK = "https://elderly-foot.com/b/3sVM0nP.3/pLvLbtmYV/JRZEDK0P2bNIzHQA1yN_Tec/zuL/THY/3RNXD/UB1/NpzlQO";
 
-// --- NEW EXTERNAL API CONFIGURATION ---
-const RAPID_KEY = (import.meta as any).env?.VITE_RAPIDAPI_KEY || 'fd43cd59cbmsh016b54d400085b6p1dae09jsn666f2499a427';
-
-const fallbackAPIs = [
-  {name: "CoinGecko", desc: "أسعار العملات المشفرة", url: "coingecko.com", free: true},
-  {name: "OpenWeather", desc: "طقس العالم", url: "openweathermap.org", free: true},
-  {name: "REST Countries", desc: "بيانات الدول", url: "restcountries.com", free: true},
-  {name: "JSON Placeholder", desc: "تجربة APIs", url: "jsonplaceholder.typicode.com", free: true},
-  {name: "Cat Facts", desc: "حقائق القطط", url: "catfact.ninja", free: true},
-  {name: "JokeAPI", desc: "نكت مضحكة", url: "sv443.net/jokeapi", free: true},
-  {name: "QR Server", desc: "مولد QR", url: "goqr.me", free: true},
-  {name: "UUID Generator", desc: "UUID عشوائي", url: "uuidgenerator.net", free: true},
-  {name: "IP Info", desc: "معلومات IP", url: "ipapi.co", free: true},
-  {name: "Bored API", desc: "أفكار تسلية", url: "boredapi.com", free: true}
-];
-
-const shareWhatsApp = (name: string) => {
-  const text = `اكتشف هذا الـ API الرائع في موقع CICI: ${name}`;
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-};
-
-const shareTelegram = (name: string) => {
-  const text = `اكتشف هذا الـ API الرائع في موقع CICI: ${name}`;
-  window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`, '_blank');
-};
-
-const getAPIsWithCache = async () => {
-  const cached = localStorage.getItem('apis_cache');
-  const cacheTime = localStorage.getItem('apis_cache_time');
-  const now = Date.now();
-  
-  if (cached && cacheTime && (now - parseInt(cacheTime) < 3600000)) {
-    return JSON.parse(cached);
-  }
-  
-  try {
-    const response = await fetch('https://publicapi.dev/api/public-apis', {
-      headers: {
-        'X-RapidAPI-Key': RAPID_KEY,
-        'X-RapidAPI-Host': 'publicapi.dev'
-      }
-    });
-    
-    const apis = await response.json();
-    localStorage.setItem('apis_cache', JSON.stringify(apis));
-    localStorage.setItem('apis_cache_time', now.toString());
-    return apis;
-  } catch {
-    return fallbackAPIs;
-  }
-};
-
-const APIListWithCache = () => {
-  const [apis, setApis] = useState<any[]>(fallbackAPIs);
+const GeminiAssistant = () => {
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 50;
-  
-  const loadAPIs = async () => {
+
+  const askAI = async () => {
+    if (!prompt.trim()) return;
     setLoading(true);
-    const data = await getAPIsWithCache();
-    const apiList = Array.isArray(data) ? data : (data.apis || data.data || fallbackAPIs);
-    setApis(apiList);
-    setLoading(false);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      const result = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `أنت WinAssistant المساعد الرسمي لمنصة winapi. ساعد المبرمج بذكاء. سؤاله: ${prompt}`,
+        config: { temperature: 0.9, thinkingConfig: { thinkingBudget: 0 } }
+      });
+      setResponse(result.text || 'لم أجد رداً مناسباً.');
+    } catch (e) {
+      setResponse('عذراً، طاقة الذكاء الاصطناعي تحتاج للشحن.');
+    } finally {
+      setLoading(false);
+    }
   };
-  
-  useEffect(() => {
-    loadAPIs();
-  }, []);
 
-  const filtered = useMemo(() => {
-    return apis.filter(api => 
-      (api.name || '').toLowerCase().includes(search.toLowerCase()) || 
-      (api.description || api.desc || '').toLowerCase().includes(search.toLowerCase())
-    );
-  }, [apis, search]);
-
-  const currentAPIs = useMemo(() => {
-    const start = (page - 1) * itemsPerPage;
-    return filtered.slice(start, start + itemsPerPage);
-  }, [filtered, page]);
-
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  
   return (
-    <div className="glass p-8 rounded-2xl mb-8 max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-          🔥 APIs مجانية جاهزة للاستخدام
-        </h2>
-        <div className="flex gap-4 w-full md:w-auto">
-          <input 
-            type="text" 
-            placeholder="ابحث عن APIs..." 
-            className="flex-grow p-3 bg-white/10 rounded-xl outline-none border border-white/10 focus:border-purple-400 transition-all text-white placeholder-white/40"
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+    <div className="glass p-8 rounded-[2.5rem] border-2 border-indigo-500/20 mb-12 relative overflow-hidden group">
+      <div className="absolute -right-20 -top-20 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-700"></div>
+      <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
+        <span className="text-3xl animate-bounce">✨</span> WinAssistant الذكي
+      </h3>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input 
+          type="text" 
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && askAI()}
+          placeholder="ماذا تريد أن تبرمج اليوم؟ دعني أساعدك..."
+          className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all text-lg"
+        />
+        <button 
+          onClick={askAI}
+          disabled={loading}
+          className="bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 px-8 py-4 rounded-2xl font-black text-lg shadow-xl shadow-indigo-500/20 active:scale-95 transition-all disabled:opacity-50"
+        >
+          {loading ? 'يفكر...' : 'انطلق'}
+        </button>
+      </div>
+      {response && (
+        <div className="mt-6 p-6 bg-indigo-950/40 rounded-3xl text-lg border-l-8 border-pink-500 animate-fade-in">
+          {response}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AdBanner = ({ imageUrl, width, height, label = "رابط مدعوم" }: any) => {
+  return (
+    <div className="flex flex-col items-center my-8">
+      <div className="relative group cursor-pointer" onClick={() => window.open(DIRECT_AD_LINK, '_blank')}>
+        <span className="absolute -top-3 right-4 bg-pink-600 text-[9px] font-bold px-2 py-0.5 rounded-full z-10 animate-pulse">{label}</span>
+        <div className="overflow-hidden rounded-[2rem] border-2 border-white/10 shadow-2xl group-hover:border-pink-500/50 transition-all duration-500">
+          <img 
+            src={imageUrl} 
+            alt="Ad" 
+            style={{ width, height, objectFit: 'cover' }} 
+            className="group-hover:scale-110 transition-transform duration-1000 grayscale-[30%] group-hover:grayscale-0" 
           />
-          <button 
-            onClick={loadAPIs}
-            disabled={loading}
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 px-6 py-2 rounded-xl font-bold shadow-xl transition-all disabled:opacity-50"
-          >
-            {loading ? '⏳' : '🔄'}
-          </button>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+          <span className="text-xs font-bold text-white">انقر للمطالبة بالهدية 🎁</span>
         </div>
       </div>
-      
-      {loading ? (
-        <div className="flex flex-col items-center py-20">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-400 mb-4"></div>
-          <p className="text-xl opacity-75">جاري التحميل...</p>
+    </div>
+  );
+};
+
+const ApiCard = ({ api, isUnlocked, onUnlock }: any) => {
+  return (
+    <div className="glass-card rounded-[2rem] overflow-hidden flex flex-col h-full relative group">
+      {!isUnlocked && (
+        <div className="absolute top-4 left-4 z-20">
+          <span className="bg-yellow-500 text-black text-[10px] font-black px-3 py-1 rounded-full animate-pulse shadow-lg">LOCKED 🔒</span>
         </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {currentAPIs.map((api, i) => (
-              <div key={i} className="glass p-6 rounded-xl hover:scale-105 transition-all border border-white/20 flex flex-col h-full group">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                    <span className="text-white font-bold text-sm">API</span>
-                  </div>
-                  <div className="overflow-hidden">
-                    <h3 className="font-bold text-lg text-white mb-1 truncate">{api.name || 'API رائع'}</h3>
-                    <p className="text-gray-200 text-xs line-clamp-2">{api.description || api.desc}</p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-white/10 mb-4">
-                  <button onClick={() => shareWhatsApp(api.name)} className="flex-1 px-2 py-1.5 bg-green-500/20 text-green-300 rounded-lg text-[10px] font-bold hover:bg-green-500/40 transition-colors">📱 واتساب</button>
-                  <button onClick={() => shareTelegram(api.name)} className="flex-1 px-2 py-1.5 bg-blue-500/20 text-blue-300 rounded-lg text-[10px] font-bold hover:bg-blue-500/40 transition-colors">✈️ تليجرام</button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${api.auth === 'No' || api.free ? 'bg-emerald-500/20 text-emerald-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
-                    {api.auth === 'No' || api.free ? 'FREE' : 'PRO'}
-                  </span>
-                  <a 
-                    href={DIRECT_AD_LINK} 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-auto px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg text-xs font-bold shadow-lg transition-all"
-                  >
-                    استخدم الآن
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex flex-row items-center justify-center gap-4 mt-12 bg-white/5 p-4 rounded-2xl">
-              <button 
-                onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
-                disabled={page === 1}
-                className="px-6 py-2 bg-white/10 rounded-xl hover:bg-white/20 disabled:opacity-30 transition-all font-bold"
-              >
-                السابق
-              </button>
-              <span className="font-bold text-sm">صفحة {page} من {totalPages}</span>
-              <button 
-                onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
-                disabled={page === totalPages}
-                className="px-6 py-2 bg-white/10 rounded-xl hover:bg-white/20 disabled:opacity-30 transition-all font-bold"
-              >
-                التالي
-              </button>
-            </div>
-          )}
-        </>
       )}
       
-      <div className="mt-8 p-4 glass rounded-xl text-center">
-        <p className="text-[10px] opacity-60">
-          💾 آخر تحديث: {new Date(parseInt(localStorage.getItem('apis_cache_time') || Date.now().toString())).toLocaleString('ar-TN')}
+      <div className={`p-6 ${isUnlocked ? 'bg-gradient-to-br from-indigo-600/10 to-transparent' : 'bg-transparent'}`}>
+        <div className="flex justify-between items-center mb-4">
+          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">
+            {CATEGORIES.find(c => c.id === api.category)?.icon || '🧩'}
+          </div>
+          <span className="text-white/10 font-mono text-[10px]">VERIFIED</span>
+        </div>
+        <h3 className={`font-black text-xl mb-2 ${!isUnlocked ? 'blur-md select-none' : 'text-indigo-300'}`}>
+          {isUnlocked ? api.name : 'HIDDEN API'}
+        </h3>
+        <p className={`text-sm text-white/50 leading-relaxed line-clamp-3 mb-6 ${!isUnlocked ? 'blur-md' : ''}`}>
+          {isUnlocked ? api.desc : 'المحتوى مشفر. انقر بالأسفل للحصول على الصلاحية الكاملة والوصول إلى الرابط.'}
         </p>
       </div>
-    </div>
-  );
-};
-// --- END NEW EXTERNAL API CONFIGURATION ---
 
-const ScriptComponent: React.FC<{ code: string }> = ({ code }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      const script = document.createElement('script');
-      script.innerHTML = code;
-      containerRef.current.appendChild(script);
-    }
-  }, [code]);
-
-  return <div ref={containerRef} className="ad-script-container" />;
-};
-
-const ALL_AD_LINKS = [
-  "http://herculist.com/members/index.cgi?Allapi",
-  "https://www.10khits.com/?ref=781647",
-  ...SPLASH_LINKS.map(s => s.href),
-  ...ADDITIONAL_LINKS.map(l => l.href)
-];
-
-const AdBanner: React.FC<{ 
-  imageUrl: string; 
-  width?: string; 
-  height?: string; 
-  onAdClick?: () => void;
-  label?: string;
-}> = ({ imageUrl, width, height, onAdClick, label }) => {
-  const randomLink = useMemo(() => ALL_AD_LINKS[Math.floor(Math.random() * ALL_AD_LINKS.length)], []);
-  return (
-    <div className="flex flex-col items-center">
-      {label && <span className="text-[10px] text-white/40 mb-1 uppercase tracking-widest">{label}</span>}
-      <a 
-        href={randomLink} 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        className="banner-container inline-block overflow-hidden"
-        style={{ width, height }}
-        onClick={onAdClick}
-      >
-        <img src={imageUrl} alt="Advertisement" className="banner-img" />
-        <div className="banner-text-layer"></div>
-        <div className="banner-overlay"></div>
-        <div className="flash-button">إعلان / AD</div>
-      </a>
-    </div>
-  );
-};
-
-const ApiCard: React.FC<{ 
-  api: API; 
-  onTest: (endpoint: string) => void; 
-  isUnlocked: boolean; 
-  onUnlock: (id: string) => void 
-}> = ({ api, onTest, isUnlocked, onUnlock }) => {
-  const adLink = useMemo(() => ALL_AD_LINKS[Math.floor(Math.random() * ALL_AD_LINKS.length)], [api.id]);
-
-  return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col h-full border border-gray-100 group relative">
-      <div className={`bg-gradient-to-r ${isUnlocked ? 'from-blue-600 to-purple-600' : 'from-gray-400 to-gray-500'} p-5 transition-colors duration-500`}>
-        <h3 className={`text-xl font-bold text-white truncate ${!isUnlocked ? 'blur-[5px] select-none' : ''}`}>
-          {isUnlocked ? api.name : '••••••••••••••••'}
-        </h3>
-        <span className="inline-block px-2 py-1 mt-2 text-xs font-semibold text-white bg-black bg-opacity-20 rounded-full">
-          #{api.category}
-        </span>
-      </div>
-      
-      <div className="p-6 flex-grow flex flex-col">
-        <div className="relative mb-4">
-          <p className={`text-gray-600 text-sm line-clamp-2 h-10 ${!isUnlocked ? 'blur-[5px] select-none' : ''}`}>
-            {isUnlocked ? api.desc : 'هذا الوصف مشفر حالياً. انقر على الزر بالأسفل لفتح القفل.'}
-          </p>
-          {!isUnlocked && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-gray-400 text-xs font-bold bg-white/80 px-2 py-1 rounded">MOCKED DATA</span>
-            </div>
-          )}
-        </div>
-        
-        <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs text-blue-600 break-all border border-gray-200 mb-6 select-all flex items-center justify-between">
-          <span className={!isUnlocked ? 'blur-[6px] select-none' : ''}>
-            {isUnlocked ? api.endpoint : 'https://api.cici.io/v1/hidden/••••••••'}
+      <div className="mt-auto p-6 pt-0">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="h-1.5 flex-1 bg-white/10 rounded-full overflow-hidden">
+            <span className="block h-full bg-indigo-500 w-full animate-pulse"></span>
           </span>
-          {!isUnlocked && <span className="text-red-500 animate-pulse">🔒</span>}
+          <span className="text-[10px] text-white/30">100% Uptime</span>
         </div>
         
-        <div className="mt-auto">
-          {isUnlocked ? (
-            <div className="space-y-3">
-              <a 
-                href={DIRECT_AD_LINK} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block w-full text-center py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-colors transform active:scale-95"
-              >
-                👆 استخدم الآن واربح!
-              </a>
-              <button 
-                onClick={() => onTest(api.endpoint)}
-                className="block w-full py-3 bg-emerald-500 text-white font-bold rounded-xl shadow-md hover:bg-emerald-600 transition-colors transform active:scale-95"
-              >
-                🧪 اختبر الأداء
-              </button>
-            </div>
-          ) : (
-            <a 
-              href={adLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => onUnlock(api.id)}
-              className="block w-full text-center py-4 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl shadow-2xl hover:from-red-700 hover:to-orange-600 transition-all transform hover:scale-[1.02] active:scale-95 border-b-4 border-red-800"
-            >
-              <div className="flex flex-col items-center">
-                <span className="text-sm">انقر هنا لفتح هذا الـ API 🔓</span>
-                <span className="text-[10px] opacity-80 uppercase tracking-tighter">Click to Unlock this API</span>
-              </div>
-            </a>
-          )}
-        </div>
+        {isUnlocked ? (
+          <a 
+            href={DIRECT_AD_LINK}
+            target="_blank"
+            className="flex items-center justify-center gap-2 w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 text-white font-black rounded-2xl shadow-xl transition-all transform active:scale-95 group/btn"
+          >
+            <span>استخدام الآن</span>
+            <span className="group-hover/btn:translate-x-1 transition-transform">🚀</span>
+          </a>
+        ) : (
+          <button 
+            onClick={() => onUnlock(api.id)}
+            className="w-full py-4 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black rounded-2xl shadow-2xl animate-glow transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            <span>فك تشفير البيانات</span>
+            <span className="text-lg">🔓</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -317,267 +141,199 @@ const ApiCard: React.FC<{
 
 const App: React.FC = () => {
   const [search, setSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [visibleCount, setVisibleCount] = useState(50);
-  const [apis] = useState<API[]>(INITIAL_APIS);
-  const [loading, setLoading] = useState(true);
+  const [activeCat, setActiveCat] = useState('all');
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(18);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1200);
-    const saved = localStorage.getItem('cici_unlocked_ids');
-    if (saved) {
-      try {
-        setUnlockedIds(new Set(JSON.parse(saved)));
-      } catch (e) {
-        console.error("Error parsing unlocked IDs", e);
-      }
-    }
-    return () => clearTimeout(timer);
+    const saved = localStorage.getItem('winapi_unlocked');
+    if (saved) setUnlockedIds(new Set(JSON.parse(saved)));
   }, []);
 
-  const handleUnlock = useCallback((id: string) => {
-    setUnlockedIds(prev => {
-      const next = new Set(prev);
-      next.add(id);
-      localStorage.setItem('cici_unlocked_ids', JSON.stringify(Array.from(next)));
-      return next;
+  const handleUnlock = (id: string) => {
+    window.open(DIRECT_AD_LINK, '_blank');
+    const next = new Set(unlockedIds).add(id);
+    setUnlockedIds(next);
+    localStorage.setItem('winapi_unlocked', JSON.stringify(Array.from(next)));
+  };
+
+  const filtered = useMemo(() => {
+    return INITIAL_APIS.filter(api => {
+      const match = api.name.toLowerCase().includes(search.toLowerCase()) || 
+                    api.desc.toLowerCase().includes(search.toLowerCase());
+      const catMatch = activeCat === 'all' || api.category === activeCat;
+      return match && catMatch;
     });
-  }, []);
-
-  const unlockRandomApi = useCallback(() => {
-    const lockedApis = apis.filter(api => !unlockedIds.has(api.id));
-    if (lockedApis.length > 0) {
-      const randomApi = lockedApis[Math.floor(Math.random() * lockedApis.length)];
-      handleUnlock(randomApi.id);
-    }
-  }, [apis, unlockedIds, handleUnlock]);
-
-  const filteredApis = useMemo(() => {
-    return apis.filter(api => {
-      const matchesSearch = api.name.toLowerCase().includes(search.toLowerCase()) || 
-                           api.desc.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = activeCategory === 'all' || api.category === activeCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [apis, search, activeCategory]);
-
-  const currentApis = useMemo(() => {
-    return filteredApis.slice(0, visibleCount);
-  }, [filteredApis, visibleCount]);
-
-  const handleTestApi = useCallback(async (endpoint: string) => {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const response = await fetch(endpoint, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (response.ok) {
-        const data = await response.json();
-        alert(`✅ يعمل بنجاح!\n\nاستجابة جزئية:\n${JSON.stringify(data).substring(0, 150)}...`);
-      } else {
-        alert(`❌ فشل الاتصال. قد يحتاج هذا الـ API إلى مفتاح خاص.`);
-      }
-    } catch (error) {
-      alert(`⚠️ خطأ في الوصول المباشر (CORS).`);
-    }
-  }, []);
-
-  const handleScroll = useCallback(() => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-      if (visibleCount < filteredApis.length) {
-        setVisibleCount(prev => prev + 20);
-      }
-    }
-  }, [visibleCount, filteredApis.length]);
-
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
-
-  const getRandom = (arr: any[]) => arr[Math.floor(Math.random() * arr.length)];
+  }, [search, activeCat]);
 
   return (
-    <div className="main-layout-grid p-4 md:p-8">
-      {/* HEADER ZONE #6745377 */}
-      <header className="area-header flex flex-col items-center gap-4">
-        <div className="w-full bg-black/20 py-6 flex flex-col items-center rounded-3xl border border-white/10 shadow-inner">
-           <ScriptComponent code={`(function(pafb){var d=document,s=d.createElement('script'),l=d.scripts[d.scripts.length-1];s.settings=pafb||{};s.src="//whispered-dress.com/bCX.VjsvdwGAlY0/Y/WFcj/se/mg9yu/ZVU/l/k/PtTeYy3DNJDJUmzXNAz/cXtmNrjgc/0qNLTqMC3_OFAh";s.async=true;s.referrerPolicy='no-referrer-when-downgrade';l.parentNode.insertBefore(s,l);})({})`} />
-           <p className="text-[10px] mt-2 opacity-30">Zone #6745377</p>
+    <div className="min-h-screen">
+      {/* Floating Animated Gift Ad */}
+      <div className="floating-ad" onClick={() => window.open(DIRECT_AD_LINK, '_blank')}>
+        <div className="bg-gradient-to-br from-pink-600 to-indigo-600 p-4 rounded-full cursor-pointer shadow-2xl border-4 border-white/20 hover:scale-110 transition-transform relative">
+          <span className="text-3xl">🎁</span>
+          <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full animate-bounce">1</span>
         </div>
-        <div className="glass px-6 py-3 rounded-full text-center w-full max-w-2xl animate-pulse">
-            <span className="text-yellow-400 font-bold">عاجل:</span> انقر على زر فتح القفل لكل API بشكل فردي لرؤية البيانات!
-        </div>
-      </header>
+      </div>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="area-main">
-        {/* Top Header Branding */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-block p-4 bg-white bg-opacity-20 rounded-full mb-6 glass">
-            <span className="text-5xl">🚀</span>
+      <div className="max-w-[1600px] mx-auto px-6 py-10">
+        {/* Top Branding Section */}
+        <div className="flex flex-col items-center text-center mb-16 relative">
+          <div className="absolute -z-10 w-full h-full opacity-20 blur-[100px] bg-gradient-to-r from-indigo-500 via-pink-500 to-cyan-500 rounded-full"></div>
+          
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10 mb-8 animate-float">
+             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+             <span className="text-xs font-bold tracking-widest text-white/70 uppercase">WinAPI v2.0 Global Portal</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4 tracking-tight drop-shadow-md">
-            CICI - محرك الـ APIs العالمي
+          
+          <h1 className="text-7xl md:text-9xl font-black mb-6 tracking-tighter neon-text">
+            winapi
           </h1>
-          <p className="text-xl md:text-2xl text-blue-100 opacity-90 font-light">
-            بيانات مخفية، فرص غير محدودة. انقر وافتح كنزك البرمجي الآن.
+          <p className="text-xl md:text-2xl text-indigo-200/60 max-w-3xl font-medium leading-relaxed">
+            المنصة الأذكى عالمياً لتمكين المبرمجين. آلاف الـ APIs المجانية بضغطة زر واحدة. 
+            <span className="text-pink-400 block mt-2 font-black">اربح، برمج، وتفوق مع winapi.</span>
           </p>
         </div>
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          <div className="glass p-6 rounded-3xl text-center shadow-xl">
-            <h3 className="text-3xl font-bold text-white">{APP_STATS.totalApis}+</h3>
-            <p className="text-blue-200 text-sm">API مجاني</p>
-          </div>
-          <div className="glass p-6 rounded-3xl text-center shadow-xl">
-            <h3 className="text-3xl font-bold text-white">{APP_STATS.totalCategories}+</h3>
-            <p className="text-blue-200 text-sm">فئة تقنية</p>
-          </div>
-          <div className="glass p-6 rounded-3xl text-center shadow-xl">
-            <h3 className="text-3xl font-bold text-white">{APP_STATS.activeUsers}</h3>
-            <p className="text-blue-200 text-sm">عمل مستمر</p>
-          </div>
-          <div className="glass p-6 rounded-3xl text-center shadow-xl">
-            <h3 className="text-3xl font-bold text-white">{APP_STATS.monthlyEarnings}</h3>
-            <p className="text-blue-200 text-sm">ربح شهري متوقع</p>
-          </div>
-        </div>
-
-        {/* API LIST COMPONENT INTEGRATION */}
-        <APIListWithCache />
-
-        {/* Search Controls for Initial APIs */}
-        <div className="sticky top-4 z-40 mb-12 space-y-6">
-          <div className="max-w-2xl mx-auto">
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="ابحث عن APIs المخفية..."
-                className="w-full p-5 pl-12 rounded-full border-none shadow-2xl focus:ring-4 focus:ring-indigo-400 text-gray-800 text-lg transition-all outline-none pr-14"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400">🔍</div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+          {[
+            { label: 'APIs المتوفرة', val: APP_STATS.totalApis, color: 'text-indigo-400' },
+            { label: 'فئات برمجية', val: APP_STATS.totalCategories, color: 'text-pink-400' },
+            { label: 'مستخدم نشط', val: APP_STATS.activeUsers, color: 'text-cyan-400' },
+            { label: 'أرباح المطورين', val: APP_STATS.monthlyEarnings, color: 'text-yellow-400' }
+          ].map((stat, i) => (
+            <div key={i} className="glass p-8 rounded-[2rem] text-center border-b-4 border-white/5 hover:border-white/20 transition-all">
+              <div className={`text-4xl font-black mb-2 ${stat.color}`}>{stat.val}</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-white/30">{stat.label}</div>
             </div>
-          </div>
-
-          <div className="flex overflow-x-auto pb-4 gap-3 custom-scrollbar no-scrollbar justify-start md:justify-center">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setActiveCategory(cat.id);
-                  setVisibleCount(50);
-                }}
-                className={`px-6 py-3 rounded-full whitespace-nowrap transition-all flex items-center gap-2 shadow-lg ${
-                  activeCategory === cat.id 
-                    ? 'bg-white text-indigo-700 font-bold scale-105' 
-                    : 'bg-indigo-900 bg-opacity-40 text-white hover:bg-opacity-60'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.name}</span>
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
 
-        {/* API Grid Content */}
-        {loading ? (
-          <div className="text-center py-20">
-            <div className="inline-block w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-2xl font-bold">جاري تحميل البيانات المشفرة...</p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {currentApis.map((api, index) => (
+        <div className="main-grid">
+          <main>
+            <GeminiAssistant />
+
+            {/* Powerful Filter UI */}
+            <div className="mb-12 sticky top-6 z-50">
+              <div className="glass p-3 rounded-[2rem] flex flex-col md:flex-row gap-4 items-center">
+                <div className="relative flex-1 w-full">
+                  <input 
+                    type="text" 
+                    placeholder="ابحث عن أي خدمة برمجية..."
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-12 py-4 text-lg outline-none focus:border-indigo-500 transition-all"
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl opacity-30">🔍</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto no-scrollbar w-full md:w-auto px-2">
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveCat(cat.id)}
+                      className={`px-6 py-4 rounded-2xl whitespace-nowrap transition-all font-bold border ${
+                        activeCat === cat.id ? 'bg-white text-black border-white shadow-xl scale-105' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Main API Grid with Injected Ads */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {filtered.slice(0, visibleCount).map((api, idx) => (
                 <React.Fragment key={api.id}>
                   <ApiCard 
                     api={api} 
-                    onTest={handleTestApi} 
                     isUnlocked={unlockedIds.has(api.id)} 
-                    onUnlock={handleUnlock}
+                    onUnlock={handleUnlock} 
                   />
-                  {/* Random Internal Banner Injection every 6 cards */}
-                  {(index + 1) % 6 === 0 && (
-                    <div className="flex flex-col justify-center items-center h-full space-y-2 p-6 glass rounded-2xl border-2 border-dashed border-white/20">
-                      <AdBanner imageUrl={getRandom(BANNERS_300)} width="300px" height="250px" onAdClick={unlockRandomApi} />
-                      <div className="text-xs text-white/50 text-center mt-2 italic">مساحة إعلانية ممولة</div>
+                  {(idx + 1) % 6 === 0 && (
+                    <div className="col-span-1 md:col-span-2 xl:col-span-1 flex flex-col items-center justify-center p-4 glass rounded-[2rem] border-2 border-dashed border-pink-500/30">
+                      <AdBanner imageUrl={BANNERS_300[idx % BANNERS_300.length]} width="300px" height="250px" label="هدية حصرية لمستخدمي winapi" />
                     </div>
                   )}
                 </React.Fragment>
               ))}
             </div>
 
-            {currentApis.length === 0 && (
-              <div className="text-center py-20 glass rounded-3xl">
-                <span className="text-6xl block mb-4">🔍</span>
-                <p className="text-2xl font-bold">لا توجد نتائج مطابقة</p>
-                <button onClick={() => setSearch('')} className="mt-4 text-indigo-200 underline">مسح البحث</button>
+            {visibleCount < filtered.length && (
+              <div className="text-center mt-20">
+                <button 
+                  onClick={() => setVisibleCount(v => v + 12)}
+                  className="px-12 py-6 bg-white text-black font-black rounded-3xl text-xl hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-white/10"
+                >
+                  استكشاف المزيد من الكنوز ↓
+                </button>
               </div>
             )}
+          </main>
 
-            {visibleCount < filteredApis.length && (
-              <div className="text-center py-10">
-                <button onClick={() => setVisibleCount(v => v + 20)} className="px-8 py-3 glass rounded-full hover:bg-white/20 transition-all font-bold">تحميل المزيد ↓</button>
-              </div>
-            )}
-          </>
-        )}
-      </main>
-
-      {/* SIDEBAR ZONE #6745378 */}
-      <aside className="area-sidebar flex flex-col gap-6">
-        <div className="sticky top-4 space-y-6">
-            <div className="bg-black/30 p-4 rounded-3xl border border-white/5 flex flex-col items-center">
-                <h4 className="text-xs font-bold text-white/40 mb-4 uppercase tracking-widest">Sponsored Sidebar</h4>
-                <ScriptComponent code={`(function(fthojk){var d=document,s=d.createElement('script'),l=d.scripts[d.scripts.length-1];s.settings=fthojk||{};s.src="//whispered-dress.com/b/X-VusMd.GEln0XYvWCcK/wexm/9WuxZAUTlxkLP/TFYW3mNeD/UIzxOMDsAMtDNAjJci0/NSTNMH4/M/Qs";s.async=true;s.referrerPolicy='no-referrer-when-downgrade';l.parentNode.insertBefore(s,l);})({})`} />
-                <p className="text-[9px] mt-4 opacity-20">Zone #6745378</p>
-            </div>
-
-            <div className="glass p-6 rounded-[2rem] space-y-4">
-                <h3 className="font-bold text-lg border-b border-white/10 pb-2">روابط سريعة</h3>
-                {ADDITIONAL_LINKS.map((link, idx) => (
-                    <a key={idx} href={link.href} target="_blank" onClick={unlockRandomApi} className="block text-sm hover:text-yellow-400 transition-colors py-1">
-                        ⚡ {link.text}
+          {/* Magical Sidebar */}
+          <aside>
+            <div className="sticky top-6 space-y-8">
+              <div className="glass p-8 rounded-[2.5rem] border border-white/10 overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/20 blur-3xl"></div>
+                <h4 className="text-xl font-black mb-8 flex items-center gap-2">
+                  <span className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-sm">🔥</span>
+                  روابط سريعة ذكية
+                </h4>
+                <div className="space-y-4">
+                  {ADDITIONAL_LINKS.map((link, i) => (
+                    <a 
+                      key={i} 
+                      href={DIRECT_AD_LINK} 
+                      target="_blank"
+                      className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-indigo-600 hover:translate-x-2 transition-all group"
+                    >
+                      <span className="font-bold text-sm text-white/80 group-hover:text-white">{link.text}</span>
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity">↗</span>
                     </a>
-                ))}
+                  ))}
+                </div>
+
+                <div className="mt-10 p-4 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-3xl border border-yellow-500/20 text-center">
+                  <div className="text-3xl mb-2">🏆</div>
+                  <div className="text-sm font-black text-yellow-500 mb-1">Win Rewards!</div>
+                  <p className="text-[10px] text-white/40">استخدم 5 APIs يومياً للدخول في سحب $50</p>
+                </div>
+              </div>
+
+              <AdBanner imageUrl={BANNERS_160[0]} width="100%" height="500px" label="Sponsor Vertical" />
+              
+              <div className="glass p-6 rounded-[2rem] text-center border border-white/5">
+                <p className="text-[10px] text-white/20 uppercase tracking-[0.3em] mb-4">WinAPI News</p>
+                <div className="text-sm font-bold text-indigo-300 animate-pulse">تم إضافة 50 API جديد اليوم! 🚀</div>
+              </div>
             </div>
-
-            <div className="flex flex-col items-center gap-4">
-                <AdBanner imageUrl={getRandom(BANNERS_160)} width="160px" height="600px" onAdClick={unlockRandomApi} />
-            </div>
-        </div>
-      </aside>
-
-      {/* FOOTER ZONE #6745384 */}
-      <footer className="area-footer flex flex-col items-center gap-10 mt-20 border-t border-white/10 pt-10">
-        <div className="w-full max-w-4xl bg-black/40 p-8 rounded-[3rem] border border-white/5 flex flex-col items-center shadow-2xl">
-            <ScriptComponent code={`(function(brdc){var d=document,s=d.createElement('script'),l=d.scripts[d.scripts.length-1];s.settings=brdc||{};s.src="//whispered-dress.com/b/XZVNs.d/GVlN0iYxWCcq/-ewmm9vuYZ/UQlTk/PITzY_3PN/DbUZzbOYDWQethNRjdcX0HNaTxMU4mN/QW";s.async=true;s.referrerPolicy='no-referrer-when-downgrade';l.parentNode.insertBefore(s,l);})({})`} />
-            <p className="text-[10px] mt-4 opacity-20">Zone #6745384</p>
+          </aside>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 w-full">
+        <footer className="mt-32 pt-16 border-t border-white/10 relative overflow-hidden">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-16">
             {SPLASH_LINKS.map((s, idx) => (
-                <a key={idx} href={s.href} target="_blank" onClick={unlockRandomApi} className="glass p-3 rounded-2xl text-[10px] text-center hover:bg-white/10 transition-colors truncate">
-                    {s.text}
-                </a>
+              <a key={idx} href={DIRECT_AD_LINK} target="_blank" className="p-6 glass rounded-2xl text-xs font-bold text-center hover:bg-indigo-600 transition-all border border-white/5">
+                {s.text}
+              </a>
             ))}
-        </div>
-
-        <div className="text-center space-y-2 pb-10">
-            <p className="text-sm opacity-50">© 2024 CICI Platform. All rights reserved.</p>
-            <div className="flex gap-4 text-[10px] opacity-30 justify-center">
-                <a href="#">Privacy</a>
-                <a href="#">Terms</a>
-                <a href="#">Contact</a>
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 pb-10">
+            <div className="text-4xl font-black neon-text">winapi</div>
+            <div className="flex gap-8 text-xs font-bold text-white/30 uppercase tracking-widest">
+              <a href="#" className="hover:text-white transition-colors">Documentation</a>
+              <a href="#" className="hover:text-white transition-colors">API Keys</a>
+              <a href="#" className="hover:text-white transition-colors">Status</a>
             </div>
-        </div>
-      </footer>
+            <div className="text-xs text-white/20 font-medium">
+              &copy; 2024 winapi Next-Gen Platform.
+            </div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 };

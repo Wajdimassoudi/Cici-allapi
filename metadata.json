@@ -1,5 +1,8 @@
 {
-  "name": "Copy of Copy of Copy of Copy of Copy of Copy of CICI - أكبر موقع APIs مجانية في العالم",
-  "description": "منصة شاملة توفر أكثر من 1000 واجهة برمجة تطبيقات (API) مجانية مقسمة حسب الفئات مع إمكانية الربح التلقائي واختبار الأداء.",
-  "requestFramePermissions": []
+  "name": "winapi - المنصة العالمية الرائدة للـ APIs والربح",
+  "description": "winapi هي الوجهة الأولى للمطورين للحصول على آلاف الـ APIs المجانية مع تجربة مستخدم ساحرة ونظام ربحي متطور.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
 }

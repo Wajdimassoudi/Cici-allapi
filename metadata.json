@@ -1,6 +1,6 @@
 {
-  "name": "winapi - المنصة العالمية الرائدة للـ APIs والربح",
-  "description": "winapi هي الوجهة الأولى للمطورين للحصول على آلاف الـ APIs المجانية مع تجربة مستخدم ساحرة ونظام ربحي متطور.",
+  "name": "cici - The Global API Gateway",
+  "description": "cici is a high-performance API hub for developers to discover, test, and integrate thousands of free services with built-in monetization.",
   "requestFramePermissions": [
     "camera",
     "microphone"

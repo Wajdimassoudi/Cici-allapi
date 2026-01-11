@@ -1,68 +1,38 @@
+
 import { API, Category, Stats } from './types';
 
-export const SHRINKME_BASE = 'https://shrinkme.click/IT1FfKju?url=';
+export const DIRECT_AD_LINK = "https://elderly-foot.com/b/3sVM0nP.3/pLvLbtmYV/JRZEDK0P2bNIzHQA1yN_Tec/zuL/THY/3RNXD/UB1/NpzlQO";
 
 export const APP_STATS: Stats = {
-  totalApis: 1200,
-  totalCategories: 60,
+  totalApis: 1500,
+  totalCategories: 45,
   activeUsers: 'Live 24/7',
-  monthlyEarnings: '$7500+'
+  monthlyEarnings: '$18.4K+'
 };
 
 export const CATEGORIES: Category[] = [
-  { id: 'all', name: 'استكشاف الكل', icon: '🚀' },
-  { id: 'crypto', name: 'المال والعملات', icon: '💎' },
-  { id: 'ai', name: 'الذكاء الاصطناعي', icon: '🧠' },
-  { id: 'games', name: 'الألعاب والترفيه', icon: '🎮' },
-  { id: 'images', name: 'الفن والتصميم', icon: '🎨' },
-  { id: 'weather', name: 'المناخ والبيئة', icon: '🌍' },
-  { id: 'dev', name: 'أدوات المطورين', icon: '🛠️' },
-  { id: 'social', name: 'بيانات التواصل', icon: '📣' }
-];
-
-export const BANNERS_300 = [
-  "http://www.herculist.com/img/300x250-1.jpg",
-  "http://www.herculist.com/img/300x250-2.jpg",
-  "http://www.herculist.com/img/300x250-3.jpg",
-  "http://www.herculist.com/img/300x250-4.jpg",
-  "http://www.herculist.com/img/300x250-6.jpg",
-  "https://www.10khits.com/banners/300x250.png"
-];
-
-export const BANNERS_160 = [
-  "http://www.herculist.com/img/160x600-1.jpg",
-  "http://www.herculist.com/img/160x600-2.jpg",
-  "http://www.herculist.com/img/160x600-5.jpg"
-];
-
-export const ADDITIONAL_LINKS = [
-  { href: "https://herculist.com/members/powerhub.cgi?Allapi", text: "اربح $100 يومياً من هنا" },
-  { href: "https://www.herculist.com/members/20deal.cgi?Allapi", text: "أفضل عروض الترافيك 2024" },
-  { href: "https://www.10khits.com/?ref=781647", text: "احصل على زوار لموقعك مجاناً" }
-];
-
-export const SPLASH_LINKS = [
-  { href: "http://www.herculist.com/splash/splash01.cgi?Allapi", text: "دعم فني 24/7" },
-  { href: "http://www.herculist.com/splash/splash08.cgi?Allapi", text: "سياسة الخصوصية" },
-  { href: "http://www.herculist.com/splash/splash17.cgi?Allapi", text: "شروط الاستخدام" }
+  { id: 'all', name: 'All Services', icon: '🌌' },
+  { id: 'ai', name: 'Intelligence', icon: '🧠' },
+  { id: 'crypto', name: 'Blockchain', icon: '⛓️' },
+  { id: 'dev', name: 'Dev Tools', icon: '⚙️' },
+  { id: 'games', name: 'Play', icon: '🕹️' },
+  { id: 'data', name: 'Analytics', icon: '📊' }
 ];
 
 export const INITIAL_APIS: API[] = [
-  { id: 'w-ai-1', category: 'ai', name: 'Gemini Pro API', endpoint: 'https://api.google.com/gemini/v1', desc: 'أقوى نموذج ذكاء اصطناعي من جوجل للدردشة والتحليل.' },
-  { id: 'w-crypto-1', category: 'crypto', name: 'BTC Whale Tracker', endpoint: 'https://api.whale-alert.io/v1', desc: 'تتبع تحركات الحيتان في سوق العملات الرقمية لحظة بلحظة.' },
-  { id: 'w-dev-1', category: 'dev', name: 'WinAPI Core Service', endpoint: 'https://winapi.io/v1/core', desc: 'الواجهة الأساسية لخدمات winapi السريعة.' },
-  { id: 'c1', category: 'crypto', name: 'CoinGecko Live', endpoint: 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', desc: 'أسعار العملات المشفرة المحدثة كل ثانية.' },
-  { id: 'g3', category: 'games', name: 'PokeAPI Master', endpoint: 'https://pokeapi.co/api/v2/pokemon', desc: 'الوصول الكامل إلى بيانات البوكيمون للألعاب.' },
-  { id: 'i1', category: 'images', name: 'Magic Cat Pix', endpoint: 'https://api.thecatapi.com/v1/images/search', desc: 'صور قطط عشوائية بتقنية HD للتطبيقات.' }
+  { id: 'cici-ai-1', category: 'ai', name: 'Gemini 3 Pro', endpoint: 'https://api.google.com/gemini/v1', desc: 'Enterprise-grade multimodal intelligence for complex reasoning.' },
+  { id: 'cici-eth-1', category: 'crypto', name: 'Ethereum Gas Tracker', endpoint: 'https://api.etherscan.io/v1', desc: 'Real-time network congestion and transaction fee analysis.' },
+  { id: 'cici-dev-1', category: 'dev', name: 'Cici Cloud Gateway', endpoint: 'https://cici.io/v1/gate', desc: 'Secure entry point for global API distribution and management.' },
+  { id: 'cici-geo-1', category: 'data', name: 'Neural Geo-Locator', endpoint: 'https://api.geoneural.com/v2', desc: 'High-precision location intelligence using satellite imagery.' },
 ];
 
-// Fill more APIs for WinAPI feel
-for (let i = 1; i <= 80; i++) {
+for (let i = 1; i <= 60; i++) {
+  const cat = CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1)) + 1];
   INITIAL_APIS.push({
-    id: `win-${i}`,
-    category: CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1)) + 1].id,
-    name: `Win Service API #${i}`,
-    endpoint: `https://winapi.io/v1/service-${i}`,
-    desc: `خدمة برمجية متطورة توفر بيانات عالية الجودة لمشروعك البرمجي رقم ${i}.`
+    id: `cici-gen-${i}`,
+    category: cat.id,
+    name: `${cat.name} Service ${i}`,
+    endpoint: `https://api.cici.io/endpoint-${i}`,
+    desc: `Scalable and reliable high-performance endpoint serving millions of concurrent requests for ${cat.name.toLowerCase()} developers.`
   });
 }
